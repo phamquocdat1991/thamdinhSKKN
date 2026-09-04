@@ -1,0 +1,4 @@
+interface:
+  display_name: "Google AI Auth Security"
+  short_description: "Secure and verify Google AI credentials"
+  default_prompt: "Use $google-ai-api-key-validation to audit this app's Google AI credentials, provider routing, verification flow, and client-side exposure."

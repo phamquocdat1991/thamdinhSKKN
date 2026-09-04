@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gemini Model Resilience"
+  short_description: "Add safe Gemini retry and model fallback"
+  default_prompt: "Use $gemini-model-overload-fallback to audit this app's Gemini calls and implement bounded, capability-safe retry and fallback."

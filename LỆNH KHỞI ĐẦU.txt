@@ -1,0 +1,133 @@
+LỆNH KHỞI ĐẦU — RÀ SOÁT, SỬA LỖI VÀ NÂNG CẤP ỨNG DỤNG GIÁO DỤC
+
+Hãy rà soát toàn diện ứng dụng hiện tại, xác định lỗi và đề xuất các cải tiến thực sự cần thiết. Làm việc theo hai giai đoạn: PHÂN TÍCH & LẬP KẾ HOẠCH trước, chỉ TRIỂN KHAI sau khi tôi phê duyệt rõ ràng.
+
+NGÔN NGỮ LÀM VIỆC: Tiếng Việt.
+
+I. GIAI ĐOẠN 1 — CHỈ ĐỌC, PHÂN TÍCH VÀ LẬP KẾ HOẠCH
+
+Trước khi sửa code, cài dependency, tạo file, commit, push hoặc deploy, bắt buộc thực hiện:
+
+1. ĐỌC ĐÚNG TÀI LIỆU CẦN THIẾT
+
+- Đọc hướng dẫn cấp project như AGENTS.md/CLAUDE.md nếu có.
+- Đọc đầy đủ:
+  - .agent/skills/gemini-model/SKILL.md
+  - .agent/skills/google-api/SKILL.md
+  - start/api.md — đây là tài liệu Google AI canonical phiên bản mới nhất trong project.
+- Khi SKILL.md dẫn tới file trong references/, chỉ đọc reference liên quan trực tiếp tới nhiệm vụ hiện tại:
+  - gemini-model/references/runtime-resilience.md khi xử lý retry, fallback, streaming hoặc lỗi API;
+  - gemini-model/references/current-models.md khi xử lý model, pricing, capability hoặc deprecation;
+  - google-api/references/provider-auth-security.md khi xử lý key, provider, backend proxy hoặc nút kiểm tra API.
+- Đọc start/SKILL 1.md và tuân thủ phần BRAINSTORM, WRITE PLAN, VERIFY.
+- Chỉ đọc start/giaodien.md khi nhiệm vụ có thay đổi UI/UX.
+- Chỉ đọc start/visit.md khi app đã có bộ đếm lượt truy cập hoặc tôi yêu cầu bổ sung chức năng này.
+- Không đọc toàn bộ .agent/skills/ một cách máy móc. Chỉ chọn skill thật sự liên quan.
+- Nếu thiếu file hoặc không thể đọc, phải báo rõ; không được giả vờ đã đọc.
+
+2. KHÁM PHÁ PROJECT Ở CHẾ ĐỘ READ-ONLY
+
+- Đọc package.json, lockfile, tsconfig/jsconfig, cấu hình framework/build, cấu hình Vercel, .gitignore, env example, test config và các file entry chính.
+- Khảo sát src/, app/, pages/, components/, services/, lib/, server/, api/ hoặc thư mục tương đương.
+- Xác định:
+  - framework, package manager và phiên bản runtime;
+  - luồng dữ liệu và chức năng chính;
+  - frontend/server boundary;
+  - nơi gọi Google AI, nơi khởi tạo SDK, model selector và error handler;
+  - streaming, structured output, tool/function calling và file upload;
+  - cách lưu provider, model và credential;
+  - test hiện có và các lệnh build hợp lệ.
+- Bảo toàn mọi thay đổi hiện có của người dùng. Không sửa file ngoài phạm vi.
+- Không hiển thị giá trị secret, API key hoặc nội dung .env. Chỉ báo tên biến và trạng thái có/không.
+
+3. CHẠY KIỂM TRA READ-ONLY PHÙ HỢP
+
+Nếu các script tồn tại, chạy:
+
+python3 .agent/skills/gemini-model/scripts/scan_gemini_model_overload.py <project-root>
+python3 .agent/skills/google-api/scripts/scan_google_ai_key_validation.py <project-root>
+
+Kết quả scanner chỉ là đầu mối rà soát, không tự động kết luận mọi dòng được báo là lỗi.
+
+4. KIỂM TRA RIÊNG CHO GOOGLE AI
+
+- Không xác thực hoặc suy đoán provider bằng tiền tố key; key là secret opaque.
+- Provider phải được chọn rõ ràng và không tự chuyển khi lỗi.
+- Với production web/mobile, key không được nằm trong client bundle, localStorage, sessionStorage hoặc biến public như VITE_*, NEXT_PUBLIC_*, PUBLIC_* và REACT_APP_*.
+- Mọi Google AI client phải được tạo tại một server-side factory dùng chung; mọi request phải đi qua một AI gateway chung.
+- Danh sách model phải lấy theo provider và lọc theo capability/modality; snapshot trong tài liệu chỉ là fallback có ngày kiểm chứng.
+- Phân biệt tối thiểu: 400, 401, 403, model_not_found, generic 404, rate-limit 429, quota 429, 5xx, timeout, safety block, cancel và unknown.
+- Retry/fallback phải có giới hạn số lần, tổng thời gian, chi phí và capability; tôn trọng Retry-After.
+- Không tự replay stream sau khi đã hiển thị chunk; không chạy tool có side effect lần hai nếu chưa có idempotency guard.
+- Không gọi API thật hoặc tiêu thụ quota trong giai đoạn lập kế hoạch. Live verification chỉ thực hiện sau khi được phê duyệt và có credential hợp lệ.
+- Nếu thay đổi model, pricing, deprecation hoặc API behavior có tính thời điểm, kiểm tra lại tài liệu chính thức của Google; không suy đoán.
+
+5. KIỂM TRA RIÊNG CHO ỨNG DỤNG GIÁO DỤC
+
+- Đối chiếu chức năng với mục tiêu người học, môn/lớp, thời lượng, đầu vào, sản phẩm học tập và tiêu chí đánh giá nếu các thông tin này có trong app.
+- Kiểm tra dữ liệu bắt buộc, trạng thái rỗng/loading/error/success, lỗi nhập liệu, thao tác lặp, khả năng khôi phục và thông báo tiếng Việt.
+- Kiểm tra accessibility, bàn phím, label, contrast, responsive/mobile và hành vi trên màn hình nhỏ.
+- Không tự ý thêm tính năng chỉ vì “có thể hữu ích”. Đưa tính năng mới vào phần đề xuất và nêu lợi ích, độ ưu tiên, chi phí/rủi ro.
+
+6. TRÌNH BÀY BÁO CÁO VÀ KẾ HOẠCH
+
+Trước khi chỉnh sửa, phải gửi cho tôi một báo cáo gồm:
+
+A. Tóm tắt kiến trúc và tình trạng hiện tại.
+B. Danh sách vấn đề theo mức Critical / High / Medium / Low, kèm file hoặc bằng chứng.
+C. Phân biệt lỗi xác nhận được, rủi ro cần kiểm tra và đề xuất tùy chọn.
+D. Kế hoạch triển khai theo Must / Should / Could.
+E. Danh sách file dự kiến tạo/sửa và lý do.
+F. Kế hoạch test: unit, integration, build, browser/UI, API error branches, security và Vercel readiness.
+G. Các giả định hoặc câu hỏi còn thiếu có thể làm thay đổi giải pháp.
+
+Sau đó DỪNG LẠI và chờ tôi trả lời rõ “Đồng ý”, “Bắt đầu” hoặc phê duyệt phạm vi cụ thể.
+
+Nếu tôi bổ sung yêu cầu vào kế hoạch, hãy cập nhật kế hoạch rồi tiếp tục chờ phê duyệt; không xem việc bổ sung là đồng ý triển khai.
+
+II. GIAI ĐOẠN 2 — TRIỂN KHAI SAU KHI ĐƯỢC PHÊ DUYỆT
+
+Sau khi tôi phê duyệt:
+
+1. Chỉ triển khai đúng phạm vi đã duyệt; nếu phát hiện mở rộng đáng kể, dừng và xin xác nhận.
+2. Ưu tiên sửa nguyên nhân gốc, tái sử dụng kiến trúc hiện có và tránh viết lại không cần thiết.
+3. Không ghi đè thay đổi không liên quan của người dùng.
+4. Thêm/cập nhật test cho hành vi quan trọng, đặc biệt error taxonomy, retry/fallback, model filtering, credential verification, streaming và tool idempotency.
+5. Chỉ chạy script thực sự có trong package.json hoặc công cụ project đã cấu hình; không tự bịa lệnh.
+6. Nếu UI thay đổi, chạy app và kiểm tra luồng chính trên trình duyệt, console error, accessibility cơ bản và responsive.
+
+III. CỔNG KIỂM TRA TRƯỚC KHI BÁO HOÀN THÀNH
+
+Trước khi nói “đã xong”, phải chạy và báo kết quả thực tế của các mục áp dụng được:
+
+- typecheck;
+- lint;
+- unit/integration test;
+- production build;
+- hai scanner Google AI ở trên;
+- secret scan nếu project có công cụ;
+- git diff --check và kiểm tra git status;
+- kiểm tra bundle/output không chứa API key hoặc biến secret public;
+- browser smoke test nếu có thay đổi giao diện;
+- kiểm tra cấu hình Vercel, serverless/API routes, biến môi trường và đường dẫn build.
+
+Với GitHub/Vercel:
+
+- Bảo đảm .gitignore đúng, không có secret, file tạm hoặc build artifact không cần thiết.
+- Dùng package manager theo lockfile và bảo đảm cài/build tái lập được.
+- Nếu project đã liên kết và công cụ cho phép, có thể chạy vercel build hoặc kiểm tra tương đương sau khi được phê duyệt.
+- Không commit, push GitHub, tạo PR hoặc deploy production nếu tôi chưa yêu cầu rõ hành động đó.
+- “Build pass” không đồng nghĩa “đã deploy”; phải ghi đúng mức đã kiểm chứng.
+
+IV. BÁO CÁO BÀN GIAO
+
+Báo cáo cuối phải nêu ngắn gọn:
+
+1. Những gì đã sửa/bổ sung.
+2. Các file đã thay đổi.
+3. Lệnh kiểm tra đã chạy và kết quả pass/fail.
+4. Cách cấu hình biến môi trường mà không tiết lộ giá trị.
+5. Mức sẵn sàng cho GitHub và Vercel.
+6. Những việc chưa thể xác minh hoặc còn cần tôi quyết định.
+
+Không tuyên bố hoàn tất nếu chưa có bằng chứng kiểm tra tương ứng.
