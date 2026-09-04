@@ -37,3 +37,5 @@ next-env.d.ts
 # media
 *.mp4
 
+
+.vercel
