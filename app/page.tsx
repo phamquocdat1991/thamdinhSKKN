@@ -16,6 +16,7 @@ import {
   SkknAnalysisResult,
   TitleAnalysisResult
 } from '@/lib/types';
+import { SAMPLE_SKKN_DATA } from '@/lib/sample-data';
 
 export default function HomePage() {
   // Theme state
@@ -178,13 +179,15 @@ export default function HomePage() {
         setHistory(updatedHistory);
         localStorage.setItem('skkn_history', JSON.stringify(updatedHistory));
 
-        // Cuộn xuống báo cáo kết quả
-        setTimeout(() => {
-          window.scrollTo({
-            top: 750,
-            behavior: 'smooth',
-          });
-        }, 100);
+        // Cuộn xuống báo cáo kết quả trên màn hình di động/tablet
+        if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+          setTimeout(() => {
+            window.scrollTo({
+              top: 650,
+              behavior: 'smooth',
+            });
+          }, 100);
+        }
       } else {
         setErrorMessage(data.message || 'Đã xảy ra lỗi trong quá trình thẩm định SKKN.');
       }
@@ -260,24 +263,28 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* 4. Form Nhập thông tin SKKN */}
-        <SkknForm
-          formData={formData}
-          setFormData={setFormData}
-          onSubmit={handleSubmit}
-          isLoading={isLoading}
-          onAnalyzeTitle={handleAnalyzeTitle}
-        />
+        {/* 4. Split-Screen Studio (Concept 1: 2 Cột Trực Quan Studio) */}
+        <div className="studio-layout">
+          {/* Cột trái: Hồ sơ đề tài & Tải file/Nhập liệu */}
+          <div className="studio-left-panel">
+            <SkknForm
+              formData={formData}
+              setFormData={setFormData}
+              onSubmit={handleSubmit}
+              isLoading={isLoading}
+              onAnalyzeTitle={handleAnalyzeTitle}
+            />
+          </div>
 
-        {/* 5. Kết quả Thẩm định Sư phạm SKKN */}
-        {currentResult && (
-          <AnalysisReport
-            result={currentResult}
-            onRecheck={() => {
-              window.scrollTo({ top: 350, behavior: 'smooth' });
-            }}
-          />
-        )}
+          {/* Cột phải: Bảng số liệu thẩm định trực quan & Dashboard */}
+          <div className="studio-right-panel">
+            <AnalysisReport
+              result={currentResult}
+              onUseSampleData={() => setFormData({ ...SAMPLE_SKKN_DATA })}
+              isLoading={isLoading}
+            />
+          </div>
+        </div>
 
         {/* 6. Footer thanh lịch chuyên nghiệp - Phát triển bởi: Anh giáo PHẠM QUỐC ĐẠT */}
         <Footer />

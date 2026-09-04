@@ -13,41 +13,49 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  Sparkles
+  Sparkles,
+  FlaskConical,
+  TrendingUp,
+  Share2,
+  FileSpreadsheet
 } from 'lucide-react';
 import { SkknAnalysisResult } from '@/lib/types';
 import confetti from 'canvas-confetti';
 
 interface AnalysisReportProps {
-  result: SkknAnalysisResult;
-  onRecheck: () => void;
+  result: SkknAnalysisResult | null;
+  onUseSampleData?: () => void;
+  isLoading?: boolean;
 }
 
-export const AnalysisReport: React.FC<AnalysisReportProps> = ({ result, onRecheck }) => {
+export const AnalysisReport: React.FC<AnalysisReportProps> = ({
+  result,
+  onUseSampleData,
+  isLoading,
+}) => {
   const [copied, setCopied] = useState(false);
   const [expandedCriteria, setExpandedCriteria] = useState<{ [key: string]: boolean }>({
-    novelty: true,
-    scientific: true,
-    effectiveness: true,
-    applicability: true,
+    details: false,
+    spelling: true,
+    advice: true,
   });
 
-  const toggleCriteria = (key: string) => {
+  const toggleSection = (key: string) => {
     setExpandedCriteria((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Hiệu ứng pháo hoa chúc mừng nếu đạt điểm cao
   React.useEffect(() => {
-    if (result.totalScore >= 80) {
+    if (result && result.totalScore >= 80) {
       confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
+        particleCount: 70,
+        spread: 60,
+        origin: { y: 0.5 },
       });
     }
-  }, [result.totalScore]);
+  }, [result]);
 
   const handleCopy = () => {
+    if (!result) return;
     const summaryText = `BÁO CÁO THẨM ĐỊNH SKKN
 Đề tài: ${result.title}
 Cấp học: ${result.gradeLevel} | Môn: ${result.subject} | Mục tiêu: ${result.targetAward}
@@ -57,9 +65,9 @@ Tỷ lệ trùng lặp: ${result.plagiarismReport.percentage}%
 Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
 --
 Đánh giá 4 Tiêu chí:
-1. Tính mới: ${result.criteria.novelty.score}/30 đ
-2. Tính khoa học: ${result.criteria.scientific.score}/30 đ
-3. Tính hiệu quả: ${result.criteria.effectiveness.score}/25 đ
+1. Tính mới & sáng tạo: ${result.criteria.novelty.score}/30 đ
+2. Tính khoa học & sư phạm: ${result.criteria.scientific.score}/30 đ
+3. Tính hiệu quả & thực nghiệm: ${result.criteria.effectiveness.score}/25 đ
 4. Khả năng nhân rộng: ${result.criteria.applicability.score}/15 đ
 `;
     navigator.clipboard.writeText(summaryText);
@@ -72,6 +80,7 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
   };
 
   const handleDownloadWord = () => {
+    if (!result) return;
     const htmlContent = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
       <head><meta charset='utf-8'><title>Báo cáo thẩm định SKKN</title></head>
@@ -98,9 +107,7 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
       </body>
       </html>
     `;
-    const blob = new Blob(['\ufeff', htmlContent], {
-      type: 'application/msword'
-    });
+    const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -109,371 +116,410 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
     URL.revokeObjectURL(url);
   };
 
-  return (
-    <div
-      style={{
-        background: 'var(--bg-surface)',
-        border: '1px solid var(--border-color)',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: 'var(--shadow-lg)',
-        overflow: 'hidden',
-        marginTop: '28px',
-        animation: 'fadeIn 0.3s ease-in',
-      }}
-    >
-      {/* Top Banner Result */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #6366f1 100%)',
-          color: '#ffffff',
-          padding: '24px 20px',
-          textAlign: 'center',
-        }}
-      >
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255, 255, 255, 0.2)', padding: '4px 12px', borderRadius: 'var(--radius-full)', fontSize: '0.8rem', fontWeight: 700, marginBottom: '10px' }}>
-          <Sparkles size={14} /> KẾT QUẢ THẨM ĐỊNH SƯ PHẠM
+  // Trạng thái trống / Chờ thẩm định
+  if (!result) {
+    return (
+      <div className="dashboard-empty-card">
+        <div className="dashboard-empty-icon">
+          <Sparkles size={32} />
         </div>
-        <h2 style={{ fontSize: '1.45rem', fontWeight: 800, marginBottom: '6px', lineHeight: 1.3 }}>
-          {result.title}
-        </h2>
-        <p style={{ fontSize: '0.85rem', color: '#dbeafe' }}>
-          {result.gradeLevel} • {result.subject} • Mục tiêu: {result.targetAward} • Ngày: {result.createdAt}
+        <h3 className="dashboard-empty-title">Dashboard Thẩm Định Sáng Kiến</h3>
+        <p className="dashboard-empty-desc">
+          Tải file Word (.docx), PDF hoặc dán nội dung ở cột bên trái để AI tiến hành chấm điểm 4 tiêu chí vàng, rà soát đạo văn và soát lỗi chính tả.
         </p>
 
-        {/* Big Score Gauge */}
-        <div
-          style={{
-            margin: '20px auto 10px',
-            width: '120px',
-            height: '120px',
-            borderRadius: '50%',
-            background: 'rgba(255, 255, 255, 0.15)',
-            border: '4px solid #ffffff',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
-          }}
-        >
-          <span style={{ fontSize: '2.2rem', fontWeight: 800, lineHeight: 1 }}>{result.totalScore}</span>
-          <span style={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.9 }}>/ 100 ĐIỂM</span>
-        </div>
+        {onUseSampleData && (
+          <button
+            type="button"
+            className="btn-inline-action"
+            onClick={onUseSampleData}
+            style={{
+              padding: '10px 20px',
+              fontSize: '0.9rem',
+              fontWeight: 700,
+              background: 'var(--primary-light)',
+              color: 'var(--primary)',
+              border: '1.5px solid var(--primary)',
+              marginBottom: '24px',
+            }}
+          >
+            <FileSpreadsheet size={16} />
+            <span>Thử ngay với dữ liệu mẫu (Toán lớp 5)</span>
+          </button>
+        )}
 
-        {/* Prediction Pill */}
-        <div style={{ display: 'inline-block', background: '#dcfce7', color: '#15803d', padding: '6px 16px', borderRadius: 'var(--radius-full)', fontWeight: 700, fontSize: '0.9rem', marginTop: '6px' }}>
-          Dự báo đạt giải: {result.awardPrediction.likelihood} ({result.awardPrediction.level})
+        <div className="dashboard-preview-pills">
+          <span className="preview-pill">✨ Điểm số tổng quan 100đ</span>
+          <span className="preview-pill">🔍 Quét đạo văn & Trùng lặp</span>
+          <span className="preview-pill">✍️ Soát lỗi chính tả sư phạm</span>
+          <span className="preview-pill">🏆 Dự báo khả năng đạt giải</span>
+          <span className="preview-pill">📄 Xuất file Word & In báo cáo</span>
         </div>
       </div>
+    );
+  }
 
-      {/* Action Bar */}
+  // Tính toán vòng cung SVG điểm tổng quan (chu vi bán kính 45: 2 * PI * 45 ≈ 283)
+  const radius = 45;
+  const circumference = 2 * Math.PI * radius;
+  const scorePercent = Math.min(100, Math.max(0, result.totalScore));
+  const strokeDashoffset = circumference - (scorePercent / 100) * circumference;
+
+  // Tính toán vòng cung bán nguyệt đo đạo văn (chu vi nửa vòng bán kính 50: PI * 50 ≈ 157)
+  const semiRadius = 50;
+  const semiCircumference = Math.PI * semiRadius;
+  const plagPercent = Math.min(100, Math.max(0, result.plagiarismReport.percentage));
+  const semiDashoffset = semiCircumference - (plagPercent / 100) * semiCircumference;
+
+  return (
+    <div style={{ animation: 'fadeIn 0.3s ease-in' }}>
+      {/* Top Title & Action Bar */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '12px 20px',
-          background: 'var(--bg-subtle)',
-          borderBottom: '1px solid var(--border-color)',
           flexWrap: 'wrap',
-          gap: '8px',
+          gap: '12px',
+          marginBottom: '16px',
         }}
       >
+        <div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <Sparkles size={14} /> Báo cáo thẩm định trực quan
+          </div>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+            {result.title}
+          </h2>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+            {result.gradeLevel} • {result.subject} • Mục tiêu: {result.targetAward}
+          </div>
+        </div>
+
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button className="btn-inline-action" onClick={handlePrint} title="In báo cáo thẩm định">
-            <Printer size={15} /> <span>In báo cáo</span>
+          <button className="btn-inline-action" onClick={handlePrint} title="In báo cáo">
+            <Printer size={15} /> <span>In</span>
           </button>
           <button className="btn-inline-action" onClick={handleDownloadWord} title="Tải file Word">
-            <Download size={15} /> <span>Tải Word (.doc)</span>
+            <Download size={15} /> <span>Tải Word</span>
           </button>
           <button className="btn-inline-action" onClick={handleCopy} title="Sao chép tóm tắt">
             {copied ? <Check size={15} color="#16a34a" /> : <Copy size={15} />}
-            <span>{copied ? 'Đã sao chép' : 'Sao chép kết quả'}</span>
+            <span>{copied ? 'Đã chép' : 'Sao chép'}</span>
           </button>
         </div>
-
-        <button
-          className="btn-inline-action"
-          style={{ color: 'var(--primary)', fontWeight: 700 }}
-          onClick={onRecheck}
-        >
-          <span>Sửa bài & Kiểm tra lại</span>
-        </button>
       </div>
 
-      <div style={{ padding: '24px 20px' }}>
-        {/* Award Summary Card */}
-        <div
-          style={{
-            background: 'var(--bg-subtle)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 'var(--radius-md)',
-            padding: '14px 16px',
-            marginBottom: '20px',
-          }}
-        >
-          <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Award size={18} color="#2563eb" /> Nhận định tổng quan từ Hội đồng thẩm định:
+      {/* TOP ROW: 3 Key Metrics Cards (Novelty, Overall Gauge, Scientific) */}
+      <div className="dashboard-metrics-grid">
+        {/* KPI 1: Tính mới & Sáng tạo */}
+        <div className="kpi-card">
+          <div className="kpi-card-header">
+            <div className="kpi-icon-box">
+              <Lightbulb size={18} />
+            </div>
+            <div className="kpi-title">Tính Mới & Sáng Tạo</div>
           </div>
-          <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-            {result.awardPrediction.summary}
-          </p>
-        </div>
-
-        {/* Section 1: Đạo văn & Trùng lặp */}
-        <div style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <AlertOctagon size={18} color="#e11d48" /> Rà soát tính độc bản & Trùng lặp (Đạo văn)
-            </h3>
-            <span
-              style={{
-                fontSize: '0.82rem',
-                fontWeight: 700,
-                padding: '2px 8px',
-                borderRadius: 'var(--radius-full)',
-                background: result.plagiarismReport.percentage < 15 ? '#dcfce7' : '#fee2e2',
-                color: result.plagiarismReport.percentage < 15 ? '#15803d' : '#b91c1c',
-              }}
-            >
-              Mức nguy cơ: {result.plagiarismReport.riskLevel} ({result.plagiarismReport.percentage}%)
+          <div className="kpi-score-row">
+            <div className="kpi-score">
+              {result.criteria.novelty.score} <span>/ {result.criteria.novelty.maxScore}</span>
+            </div>
+            <span className="kpi-badge">
+              {result.criteria.novelty.score >= 25 ? 'Xuất sắc' : 'Rất Cao'}
             </span>
           </div>
-
-          {/* Progress bar */}
-          <div style={{ height: '8px', background: 'var(--bg-subtle)', borderRadius: '4px', overflow: 'hidden', marginBottom: '8px' }}>
+          <div className="kpi-progress-bar">
             <div
+              className="kpi-progress-fill"
               style={{
-                height: '100%',
-                width: `${Math.min(100, result.plagiarismReport.percentage * 2.5)}%`,
-                background: result.plagiarismReport.percentage < 15 ? '#16a34a' : '#e11d48',
-                borderRadius: '4px',
-                transition: 'width 0.5s ease',
+                width: `${(result.criteria.novelty.score / result.criteria.novelty.maxScore) * 100}%`,
+                background: 'linear-gradient(90deg, #3b82f6, #60a5fa)',
               }}
             />
           </div>
-          <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>
-            {result.plagiarismReport.details}
-          </p>
         </div>
 
-        {/* Section 2: Lỗi chính tả & Diễn đạt */}
-        <div style={{ marginBottom: '24px' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <FileCheck size={18} color="#d97706" /> Soát lỗi chính tả, diễn đạt & quy chuẩn ({result.spellingErrors.length} phát hiện)
-          </h3>
-          {result.spellingErrors.length === 0 ? (
-            <div style={{ fontSize: '0.86rem', color: '#16a34a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <CheckCircle2 size={16} /> Không phát hiện lỗi chính tả nghiêm trọng nào.
+        {/* Center: Overall Score Gauge */}
+        <div className="overview-gauge-card">
+          <div className="overview-gauge-title">ĐIỂM TỔNG QUAN</div>
+          <div className="gauge-circle-outer">
+            <svg className="gauge-circle-svg" viewBox="0 0 110 110">
+              <circle className="gauge-circle-bg" cx="55" cy="55" r={radius} />
+              <circle
+                className="gauge-circle-val"
+                cx="55"
+                cy="55"
+                r={radius}
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+              />
+            </svg>
+            <div className="gauge-circle-inner">
+              <div className="gauge-score-number">{result.totalScore}</div>
+              <div className="gauge-score-max">/ 100</div>
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {result.spellingErrors.map((err, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 'var(--radius-md)',
-                    background: 'var(--bg-subtle)',
-                    border: '1px solid var(--border-color)',
-                    fontSize: '0.85rem',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
-                    <span style={{ color: '#dc2626', textDecoration: 'line-through', fontWeight: 600 }}>{err.original}</span>
-                    <span>→</span>
-                    <span style={{ color: '#16a34a', fontWeight: 700 }}>{err.suggestion}</span>
-                  </div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                    <em>Ngữ cảnh: &quot;{err.context}&quot;</em> — {err.reason}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Section 3: Đánh giá 4 Tiêu chí vàng của SKKN */}
-        <div style={{ marginBottom: '24px' }}>
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 800, marginBottom: '12px' }}>
-            Đánh giá 4 Tiêu chí Vàng của Sáng kiến Kinh nghiệm
-          </h3>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {/* Tiêu chí 1: Tính mới */}
-            <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-              <div
-                onClick={() => toggleCriteria('novelty')}
-                style={{
-                  padding: '12px 14px',
-                  background: 'var(--bg-subtle)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  cursor: 'pointer',
-                }}
-              >
-                <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>
-                  1. {result.criteria.novelty.name}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 700, fontSize: '0.82rem' }}>
-                    {result.criteria.novelty.score} / {result.criteria.novelty.maxScore} đ
-                  </span>
-                  {expandedCriteria.novelty ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </div>
-              </div>
-              {expandedCriteria.novelty && (
-                <div style={{ padding: '12px 14px', fontSize: '0.85rem', lineHeight: 1.5 }}>
-                  <div style={{ color: '#16a34a', marginBottom: '4px' }}>
-                    <strong>Ưu điểm:</strong> {result.criteria.novelty.strengths.join(' ')}
-                  </div>
-                  <div style={{ color: '#ea580c', marginBottom: '4px' }}>
-                    <strong>Hạn chế:</strong> {result.criteria.novelty.weaknesses.join(' ')}
-                  </div>
-                  <div style={{ color: 'var(--primary)' }}>
-                    <strong>Khuyến nghị:</strong> {result.criteria.novelty.recommendations.join(' ')}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Tiêu chí 2: Tính khoa học */}
-            <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-              <div
-                onClick={() => toggleCriteria('scientific')}
-                style={{
-                  padding: '12px 14px',
-                  background: 'var(--bg-subtle)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  cursor: 'pointer',
-                }}
-              >
-                <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>
-                  2. {result.criteria.scientific.name}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 700, fontSize: '0.82rem' }}>
-                    {result.criteria.scientific.score} / {result.criteria.scientific.maxScore} đ
-                  </span>
-                  {expandedCriteria.scientific ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </div>
-              </div>
-              {expandedCriteria.scientific && (
-                <div style={{ padding: '12px 14px', fontSize: '0.85rem', lineHeight: 1.5 }}>
-                  <div style={{ color: '#16a34a', marginBottom: '4px' }}>
-                    <strong>Ưu điểm:</strong> {result.criteria.scientific.strengths.join(' ')}
-                  </div>
-                  <div style={{ color: '#ea580c', marginBottom: '4px' }}>
-                    <strong>Hạn chế:</strong> {result.criteria.scientific.weaknesses.join(' ')}
-                  </div>
-                  <div style={{ color: 'var(--primary)' }}>
-                    <strong>Khuyến nghị:</strong> {result.criteria.scientific.recommendations.join(' ')}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Tiêu chí 3: Tính hiệu quả */}
-            <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-              <div
-                onClick={() => toggleCriteria('effectiveness')}
-                style={{
-                  padding: '12px 14px',
-                  background: 'var(--bg-subtle)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  cursor: 'pointer',
-                }}
-              >
-                <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>
-                  3. {result.criteria.effectiveness.name}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 700, fontSize: '0.82rem' }}>
-                    {result.criteria.effectiveness.score} / {result.criteria.effectiveness.maxScore} đ
-                  </span>
-                  {expandedCriteria.effectiveness ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </div>
-              </div>
-              {expandedCriteria.effectiveness && (
-                <div style={{ padding: '12px 14px', fontSize: '0.85rem', lineHeight: 1.5 }}>
-                  <div style={{ color: '#16a34a', marginBottom: '4px' }}>
-                    <strong>Ưu điểm:</strong> {result.criteria.effectiveness.strengths.join(' ')}
-                  </div>
-                  <div style={{ color: '#ea580c', marginBottom: '4px' }}>
-                    <strong>Hạn chế:</strong> {result.criteria.effectiveness.weaknesses.join(' ')}
-                  </div>
-                  <div style={{ color: 'var(--primary)' }}>
-                    <strong>Khuyến nghị:</strong> {result.criteria.effectiveness.recommendations.join(' ')}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Tiêu chí 4: Khả năng nhân rộng */}
-            <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-              <div
-                onClick={() => toggleCriteria('applicability')}
-                style={{
-                  padding: '12px 14px',
-                  background: 'var(--bg-subtle)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  cursor: 'pointer',
-                }}
-              >
-                <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>
-                  4. {result.criteria.applicability.name}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 700, fontSize: '0.82rem' }}>
-                    {result.criteria.applicability.score} / {result.criteria.applicability.maxScore} đ
-                  </span>
-                  {expandedCriteria.applicability ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </div>
-              </div>
-              {expandedCriteria.applicability && (
-                <div style={{ padding: '12px 14px', fontSize: '0.85rem', lineHeight: 1.5 }}>
-                  <div style={{ color: '#16a34a', marginBottom: '4px' }}>
-                    <strong>Ưu điểm:</strong> {result.criteria.applicability.strengths.join(' ')}
-                  </div>
-                  <div style={{ color: '#ea580c', marginBottom: '4px' }}>
-                    <strong>Hạn chế:</strong> {result.criteria.applicability.weaknesses.join(' ')}
-                  </div>
-                  <div style={{ color: 'var(--primary)' }}>
-                    <strong>Khuyến nghị:</strong> {result.criteria.applicability.recommendations.join(' ')}
-                  </div>
-                </div>
-              )}
-            </div>
+          </div>
+          <div className="overview-award-pill">
+            {result.awardPrediction.likelihood}
           </div>
         </div>
 
-        {/* Section 4: Tư vấn chiến lược nâng cấp SKKN */}
+        {/* KPI 2: Tính Khoa học & Sư phạm */}
+        <div className="kpi-card">
+          <div className="kpi-card-header">
+            <div className="kpi-icon-box" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#9333ea' }}>
+              <FlaskConical size={18} />
+            </div>
+            <div className="kpi-title">Tính Khoa Học Sư Phạm</div>
+          </div>
+          <div className="kpi-score-row">
+            <div className="kpi-score">
+              {result.criteria.scientific.score} <span>/ {result.criteria.scientific.maxScore}</span>
+            </div>
+            <span className="kpi-badge" style={{ background: '#f3e8ff', color: '#7e22ce' }}>
+              {result.criteria.scientific.score >= 25 ? 'Xuất sắc' : 'Rất Cao'}
+            </span>
+          </div>
+          <div className="kpi-progress-bar">
+            <div
+              className="kpi-progress-fill"
+              style={{
+                width: `${(result.criteria.scientific.score / result.criteria.scientific.maxScore) * 100}%`,
+                background: 'linear-gradient(90deg, #9333ea, #c084fc)',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* MIDDLE ROW: 2 KPI Cards (Effectiveness & Replicability) */}
+      <div className="dashboard-row-2col">
+        {/* KPI 3: Tính Thực tiễn / Hiệu quả */}
+        <div className="kpi-card">
+          <div className="kpi-card-header">
+            <div className="kpi-icon-box" style={{ background: 'rgba(22, 163, 74, 0.15)', color: '#16a34a' }}>
+              <TrendingUp size={18} />
+            </div>
+            <div className="kpi-title">Tính Thực Tiễn & Hiệu Quả</div>
+          </div>
+          <div className="kpi-score-row">
+            <div className="kpi-score">
+              {result.criteria.effectiveness.score} <span>/ {result.criteria.effectiveness.maxScore}</span>
+            </div>
+            <span className="kpi-badge">Rất Cao</span>
+          </div>
+          <div className="kpi-progress-bar">
+            <div
+              className="kpi-progress-fill"
+              style={{
+                width: `${(result.criteria.effectiveness.score / result.criteria.effectiveness.maxScore) * 100}%`,
+                background: 'linear-gradient(90deg, #16a34a, #4ade80)',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* KPI 4: Khả năng Nhân rộng */}
+        <div className="kpi-card">
+          <div className="kpi-card-header">
+            <div className="kpi-icon-box" style={{ background: 'rgba(79, 70, 229, 0.15)', color: '#4f46e5' }}>
+              <Share2 size={18} />
+            </div>
+            <div className="kpi-title">Khả Năng Nhân Rộng</div>
+          </div>
+          <div className="kpi-score-row">
+            <div className="kpi-score">
+              {result.criteria.applicability.score} <span>/ {result.criteria.applicability.maxScore}</span>
+            </div>
+            <span className="kpi-badge">Rất Cao</span>
+          </div>
+          <div className="kpi-progress-bar">
+            <div
+              className="kpi-progress-fill"
+              style={{
+                width: `${(result.criteria.applicability.score / result.criteria.applicability.maxScore) * 100}%`,
+                background: 'linear-gradient(90deg, #4f46e5, #818cf8)',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* PLAGIARISM RADIAL METER CARD */}
+      <div className="plagiarism-card">
+        <div className="plagiarism-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, fontSize: '0.95rem' }}>
+            <AlertOctagon size={18} color="#e11d48" />
+            <span>KIỂM TRA ĐẠO VĂN (TÍNH ĐỘC BẢN)</span>
+          </div>
+          <span
+            style={{
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-full)',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              background: result.plagiarismReport.percentage < 15 ? '#dcfce7' : '#fee2e2',
+              color: result.plagiarismReport.percentage < 15 ? '#15803d' : '#b91c1c',
+            }}
+          >
+            Nguy cơ: {result.plagiarismReport.riskLevel}
+          </span>
+        </div>
+
+        <div className="plagiarism-body">
+          {/* Semi-circular meter */}
+          <div className="semi-meter-box">
+            <svg className="semi-meter-svg" viewBox="0 0 120 60">
+              <path
+                d="M 10 55 A 50 50 0 0 1 110 55"
+                fill="none"
+                stroke="var(--bg-subtle)"
+                strokeWidth="10"
+                strokeLinecap="round"
+              />
+              <path
+                d="M 10 55 A 50 50 0 0 1 110 55"
+                fill="none"
+                stroke={result.plagiarismReport.percentage < 15 ? '#16a34a' : '#e11d48'}
+                strokeWidth="10"
+                strokeLinecap="round"
+                strokeDasharray={semiCircumference}
+                strokeDashoffset={semiDashoffset}
+                style={{ transition: 'stroke-dashoffset 1s ease' }}
+              />
+            </svg>
+            <div className="semi-meter-val">{result.plagiarismReport.percentage}%</div>
+          </div>
+
+          {/* Stats Breakdown */}
+          <div className="plagiarism-stats-list">
+            <div className="plagiarism-stat-item">
+              <span className="stat-dot" style={{ background: '#ef4444' }} />
+              <span>
+                <strong>{result.plagiarismReport.percentage}%</strong> Trùng lặp phát hiện
+              </span>
+            </div>
+            <div className="plagiarism-stat-item">
+              <span className="stat-dot" style={{ background: '#3b82f6' }} />
+              <span>
+                <strong>{(100 - result.plagiarismReport.percentage).toFixed(1)}%</strong> Nguyên bản độc lập
+              </span>
+            </div>
+            <div className="plagiarism-stat-item" style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+              <span className="stat-dot" style={{ background: '#94a3b8' }} />
+              <span>{result.plagiarismReport.details}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* SPELLING ERRORS SECTION */}
+      <div
+        style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--radius-lg)',
+          overflow: 'hidden',
+          marginBottom: '16px',
+        }}
+      >
         <div
+          onClick={() => toggleSection('spelling')}
           style={{
-            background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.06) 0%, rgba(124, 58, 237, 0.06) 100%)',
-            border: '1px solid rgba(59, 130, 246, 0.3)',
-            borderRadius: 'var(--radius-md)',
-            padding: '16px',
+            padding: '14px 18px',
+            background: 'var(--bg-subtle)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 800, fontSize: '0.98rem', color: 'var(--primary)', marginBottom: '8px' }}>
-            <Lightbulb size={18} /> Kế hoạch hành động để đạt giải {result.targetAward}:
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.92rem' }}>
+            <FileCheck size={18} color="#d97706" />
+            <span>Soát lỗi chính tả & Thể thức văn bản ({result.spellingErrors.length} phát hiện)</span>
           </div>
-          <ul style={{ paddingLeft: '20px', fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-            {result.strategicAdvice.actionPlan?.map((step, idx) => (
-              <li key={idx} style={{ marginBottom: '4px' }}>
-                {step}
-              </li>
-            ))}
-          </ul>
+          {expandedCriteria.spelling ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </div>
+
+        {expandedCriteria.spelling && (
+          <div style={{ padding: '16px 18px' }}>
+            {result.spellingErrors.length === 0 ? (
+              <div style={{ color: '#16a34a', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.86rem' }}>
+                <CheckCircle2 size={16} /> Không phát hiện lỗi chính tả nghiêm trọng nào.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {result.spellingErrors.map((err, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--bg-subtle)',
+                      border: '1px solid var(--border-color)',
+                      fontSize: '0.84rem',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span style={{ color: '#dc2626', textDecoration: 'line-through', fontWeight: 600 }}>
+                        {err.original}
+                      </span>
+                      <span>→</span>
+                      <span style={{ color: '#16a34a', fontWeight: 700 }}>{err.suggestion}</span>
+                    </div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+                      <em>&quot;{err.context}&quot;</em> — {err.reason}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* STRATEGIC UPGRADE RECOMMENDATIONS */}
+      <div
+        style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--radius-lg)',
+          overflow: 'hidden',
+          marginBottom: '16px',
+        }}
+      >
+        <div
+          onClick={() => toggleSection('advice')}
+          style={{
+            padding: '14px 18px',
+            background: 'var(--bg-subtle)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.92rem' }}>
+            <Award size={18} color="#2563eb" />
+            <span>Kế hoạch nâng cấp để đạt giải {result.targetAward}</span>
+          </div>
+          {expandedCriteria.advice ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </div>
+
+        {expandedCriteria.advice && (
+          <div style={{ padding: '16px 18px', fontSize: '0.86rem', lineHeight: 1.6 }}>
+            <div style={{ marginBottom: '10px', color: 'var(--text-secondary)' }}>
+              <strong>Nhận xét từ Hội đồng:</strong> {result.awardPrediction.summary}
+            </div>
+            <ul style={{ paddingLeft: '20px', color: 'var(--text-secondary)' }}>
+              {result.strategicAdvice.actionPlan?.map((step, idx) => (
+                <li key={idx} style={{ marginBottom: '4px' }}>
+                  {step}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
