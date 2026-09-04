@@ -18,6 +18,9 @@ export const CoursePromoBanner: React.FC = () => {
       </a>
 
       <div className="promo-footer">
+        <div style={{ marginBottom: '4px', fontWeight: 700, color: '#f8fafc' }}>
+          Phát triển bởi: Anh giáo PHẠM QUỐC ĐẠT
+        </div>
         <div>Mọi thông tin vui lòng liên hệ:</div>
         <div className="promo-contact-row">
           <div className="promo-contact-item">

@@ -16,7 +16,7 @@ export const HeroBanner: React.FC = () => {
 
       {/* Author Tag */}
       <p className="hero-author">
-        Phát triển bởi Thầy <strong>Trần Hoài Thanh</strong>
+        Phát triển bởi: <strong>Anh giáo PHẠM QUỐC ĐẠT</strong>
       </p>
 
       {/* Security & Advisory Notice */}

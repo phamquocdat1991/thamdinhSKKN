@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title: 'TRỢ LÝ SKKN - Nâng Tầm Sáng Kiến Kinh Nghiệm Của Bạn',
   description: 'Công cụ AI hỗ trợ giáo viên kiểm tra đạo văn, soát lỗi chính tả, đánh giá 4 tiêu chí vàng và tư vấn chiến lược nâng cao chất lượng Sáng Kiến Kinh Nghiệm.',
   keywords: ['SKKN', 'sáng kiến kinh nghiệm', 'giáo dục', 'giáo viên', 'thẩm định SKKN', 'đạo văn', 'chính tả'],
-  authors: [{ name: 'Thầy Trần Hoài Thanh' }],
+  authors: [{ name: 'Anh giáo PHẠM QUỐC ĐẠT' }],
 };
 
 export default function RootLayout({

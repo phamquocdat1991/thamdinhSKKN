@@ -94,7 +94,7 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
         <hr/>
         <h3>III. TƯ VẤN NÂNG CẤP CHIẾN LƯỢC</h3>
         <p>${result.strategicAdvice.titleReview}</p>
-        <p><em>Hệ thống thẩm định Trợ Lý SKKN - Phát triển bởi Thầy Trần Hoài Thanh</em></p>
+        <p><em>Hệ thống thẩm định Trợ Lý SKKN - Phát triển bởi: Anh giáo PHẠM QUỐC ĐẠT</em></p>
       </body>
       </html>
     `;

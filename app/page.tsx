@@ -279,7 +279,7 @@ export default function HomePage() {
           />
         )}
 
-        {/* 6. Banner Khóa học & Thông tin Liên hệ Thầy Trần Hoài Thanh */}
+        {/* 6. Banner Khóa học & Thông tin Liên hệ - Phát triển bởi: Anh giáo PHẠM QUỐC ĐẠT */}
         <CoursePromoBanner />
       </main>
 
