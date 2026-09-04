@@ -9,7 +9,7 @@ import { HistoryModal } from '@/components/HistoryModal';
 import { CompareModal } from '@/components/CompareModal';
 import { SkknForm } from '@/components/SkknForm';
 import { AnalysisReport } from '@/components/AnalysisReport';
-import { CoursePromoBanner } from '@/components/CoursePromoBanner';
+import { Footer } from '@/components/Footer';
 import {
   GoogleAiProvider,
   SkknFormData,
@@ -279,8 +279,8 @@ export default function HomePage() {
           />
         )}
 
-        {/* 6. Banner Khóa học & Thông tin Liên hệ - Phát triển bởi: Anh giáo PHẠM QUỐC ĐẠT */}
-        <CoursePromoBanner />
+        {/* 6. Footer thanh lịch chuyên nghiệp - Phát triển bởi: Anh giáo PHẠM QUỐC ĐẠT */}
+        <Footer />
       </main>
 
       {/* Modal Cài đặt API Key */}
