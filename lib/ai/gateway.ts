@@ -106,17 +106,34 @@ Yêu cầu trả về DUY NHẤT một JSON theo cấu trúc sau (không kèm ma
   "suggestedTitles": ["Gợi ý tên 1", "Gợi ý tên 2", "Gợi ý tên 3"]
 }`;
 
-    const res = await client.models.generateContent({
-      model: modelId,
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      }
-    });
+    const waterfall = [
+      { model: modelId || 'gemini-3.8-flash', timeoutMs: 10000 },
+      { model: 'gemini-3.7-flash', timeoutMs: 8000 },
+      { model: 'gemini-3.6-flash', timeoutMs: 8000 },
+      { model: 'gemini-3.5-flash-lite', timeoutMs: 6000 },
+    ].filter((m, idx, arr) => arr.findIndex((x) => x.model === m.model) === idx);
 
-    const text = res.text || '';
-    const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanJson);
+    for (const candidate of waterfall) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), candidate.timeoutMs);
+      try {
+        const res = await client.models.generateContent({
+          model: candidate.model,
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            abortSignal: controller.signal,
+          },
+        });
+        clearTimeout(timer);
+        const text = res.text || '';
+        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanJson);
+      } catch (err) {
+        clearTimeout(timer);
+        console.warn(`[SKKN Title Fallback] ${candidate.model} chậm hoặc lỗi, đang chuyển sang model dự phòng...`);
+      }
+    }
   } catch (e) {
     // Fallback phân tích sư phạm ngoại tuyến nếu lỗi API
     return {
@@ -158,11 +175,20 @@ export async function analyzeFullSkkn(
     };
   }
 
-  // Nếu có API key, gọi Google AI với retry có backoff & jitter theo api.md v5.0
-  const maxRetries = 2;
+  // Chuỗi bậc thang model kèm latency timeout (gemini-resilience-gateway standard)
+  const candidateModels = [
+    { model: modelId || 'gemini-3.8-flash', timeoutMs: 14000 },
+    { model: 'gemini-3.7-flash', timeoutMs: 12000 },
+    { model: 'gemini-3.6-flash', timeoutMs: 10000 },
+    { model: 'gemini-3.5-flash-lite', timeoutMs: 8000 },
+  ].filter((item, idx, arr) => arr.findIndex(x => x.model === item.model) === idx);
+
   let lastError: NormalizedAiError | null = null;
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  for (const candidate of candidateModels) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(new Error(`Timeout sau ${candidate.timeoutMs}ms`)), candidate.timeoutMs);
+
     try {
       const client = createGoogleAiClient(provider, apiKey);
       const prompt = `Bạn là Hội đồng Chuyên gia Thẩm định Sáng kiến Kinh nghiệm (SKKN) uy tín của ngành Giáo dục Việt Nam.
@@ -257,12 +283,14 @@ Yêu cầu trả về DUY NHẤT một JSON hợp lệ tuân thủ chính xác S
 }`;
 
       const res = await client.models.generateContent({
-        model: modelId,
+        model: candidate.model,
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
-        }
+          abortSignal: controller.signal,
+        },
       });
+      clearTimeout(timer);
 
       const text = res.text || '';
       const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -284,6 +312,7 @@ Yêu cầu trả về DUY NHẤT một JSON hợp lệ tuân thủ chính xác S
         ...parsed,
       };
     } catch (err: unknown) {
+      clearTimeout(timer);
       lastError = normalizeAiError(err);
 
       // Nếu là lỗi 401 hoặc 403 hoặc 400 thì không retry theo api.md
@@ -296,12 +325,7 @@ Yêu cầu trả về DUY NHẤT một JSON hợp lệ tuân thủ chính xác S
         throw new Error(lastError.userFriendlyVi);
       }
 
-      // Retry với exponential backoff + jitter nếu gặp 429 rate limit hoặc 503
-      if (attempt < maxRetries) {
-        const backoffMs = Math.min(4000, 1000 * 2 ** attempt) + Math.floor(Math.random() * 500);
-        await delay(lastError.retryAfterMs ?? backoffMs);
-        continue;
-      }
+      console.warn(`[SKKN Fallback] Model ${candidate.model} gặp sự cố (${lastError.kind}), đang chuyển sang model dự phòng...`);
     }
   }
 
