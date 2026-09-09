@@ -416,6 +416,7 @@ export const SkknForm: React.FC<SkknFormProps> = ({
           </select>
         </div>
 
+        {formData.content.length > 30000 && <p className="demo-notice">Tài liệu dài hơn 30.000 ký tự. Phiên bản hiện tại chỉ gửi 30.000 ký tự đầu cho AI; thầy cô nên chia nội dung để thẩm định đầy đủ.</p>}
         {/* Action Button */}
         <button
           className="btn-primary-large"

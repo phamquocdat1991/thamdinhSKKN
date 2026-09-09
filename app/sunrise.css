@@ -97,3 +97,6 @@ button:disabled { cursor: not-allowed; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin { animation: spin 1s linear infinite; }
+.overview-gauge-card { background: linear-gradient(135deg, #3e7c68, #699c7b); box-shadow: 0 8px 20px #47816e20; }
+.kpi-progress-fill { background: linear-gradient(90deg, #59947a, #a6c7ad) !important; }
+.studio-right-panel .btn-inline-action { min-height: 36px; padding: 6px 12px; }

@@ -55,6 +55,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({
           </button>
         </div>
 
+        {(itemA?.isDemo || itemB?.isDemo) && <p className="demo-notice">Có báo cáo minh họa trong lựa chọn. Chênh lệch điểm không phản ánh sự tiến bộ thực tế.</p>}
         {/* Body */}
         <div className="modal-body">
           {history.length < 2 ? (
@@ -112,7 +113,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                             {isSelected ? (index === 0 ? 'A' : 'B') : ''}
                           </span>
                           <span style={{ fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                            {item.title}
+                            {item.isDemo ? "[Minh họa] " : ""}{item.title}
                           </span>
                         </div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
@@ -230,3 +231,4 @@ export const CompareModal: React.FC<CompareModalProps> = ({
     </div>
   );
 };
+

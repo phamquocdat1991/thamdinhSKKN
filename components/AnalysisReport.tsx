@@ -55,7 +55,7 @@ export const AnalysisReport: React.FC<AnalysisReportProps> = ({
     }
   }, [result]);
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!result) return;
     const summaryText = `BÁO CÁO THẨM ĐỊNH SKKN
 ${result.isDemo ? '[BÁO CÁO MINH HỌA — KHÔNG PHẢI THẨM ĐỊNH THẬT]' : ''}
@@ -72,9 +72,11 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
 3. Tính hiệu quả & thực nghiệm: ${result.criteria.effectiveness.score}/25 đ
 4. Khả năng nhân rộng: ${result.criteria.applicability.score}/15 đ
 `;
-    navigator.clipboard.writeText(summaryText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(summaryText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { alert('Không thể sao chép. Thầy cô có thể tải báo cáo Word.'); }
   };
 
   const handlePrint = () => {
@@ -83,20 +85,21 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
 
   const handleDownloadWord = () => {
     if (!result) return;
+    const escapeHtml = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
     const htmlContent = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
       <head><meta charset='utf-8'><title>Báo cáo thẩm định SKKN</title></head>
       <body style="font-family: 'Times New Roman', serif; line-height: 1.5; padding: 20px;">
         <h2 style="text-align: center; color: #1e3a8a;">BÁO CÁO THẨM ĐỊNH SÁNG KIẾN KINH NGHIỆM</h2>
         ${result.isDemo ? '<p><strong>BÁO CÁO MINH HỌA — KHÔNG PHẢI THẨM ĐỊNH THẬT</strong></p>' : ''}
-        <p><strong>Tên đề tài:</strong> ${result.title}</p>
-        <p><strong>Cấp học:</strong> ${result.gradeLevel} | <strong>Môn:</strong> ${result.subject}</p>
-        <p><strong>Mục tiêu đạt giải:</strong> ${result.targetAward}</p>
+        <p><strong>Tên đề tài:</strong> ${escapeHtml(result.title)}</p>
+        <p><strong>Cấp học:</strong> ${escapeHtml(result.gradeLevel)} | <strong>Môn:</strong> ${escapeHtml(result.subject)}</p>
+        <p><strong>Mục tiêu đạt giải:</strong> ${escapeHtml(result.targetAward)}</p>
         <hr/>
         <h3>I. KẾT QUẢ TỔNG QUAN</h3>
         <p><strong>Tổng điểm đánh giá:</strong> ${result.totalScore} / 100 điểm</p>
-        <p><strong>Dự báo khả năng đạt giải:</strong> ${result.awardPrediction.likelihood} - ${result.awardPrediction.summary}</p>
-        <p><strong>Tỷ lệ trùng lặp văn bản:</strong> ${result.plagiarismReport.percentage}% (${result.plagiarismReport.riskLevel})</p>
+        <p><strong>Dự báo khả năng đạt giải:</strong> ${escapeHtml(result.awardPrediction.likelihood)} - ${escapeHtml(result.awardPrediction.summary)}</p>
+        <p><strong>Tỷ lệ trùng lặp văn bản:</strong> ${result.plagiarismReport.percentage}% (${escapeHtml(result.plagiarismReport.riskLevel)})</p>
         <hr/>
         <h3>II. ĐÁNH GIÁ CHI TIẾT 4 TIÊU CHÍ VÀNG</h3>
         <p><strong>1. Tính mới & sáng tạo:</strong> ${result.criteria.novelty.score}/30 điểm</p>
@@ -105,7 +108,7 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
         <p><strong>4. Khả năng nhân rộng:</strong> ${result.criteria.applicability.score}/15 điểm</p>
         <hr/>
         <h3>III. TƯ VẤN NÂNG CẤP CHIẾN LƯỢC</h3>
-        <p>${result.strategicAdvice.titleReview}</p>
+        <p>${escapeHtml(result.strategicAdvice.titleReview)}</p>
         <p><em>Hệ thống thẩm định Trợ Lý SKKN - Phát triển bởi: Anh giáo PHẠM QUỐC ĐẠT</em></p>
       </body>
       </html>
@@ -115,8 +118,10 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
     const a = document.createElement('a');
     a.href = url;
     a.download = `Bao_cao_tham_dinh_${result.title.slice(0, 30)}.doc`;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   if (isLoading) return <div className="dashboard-empty-card" role="status"><div className="dashboard-empty-icon"><Loader2 size={32} className="spin" /></div><h3 className="dashboard-empty-title">Đang đọc và thẩm định sáng kiến…</h3><p className="dashboard-empty-desc">Thầy cô vui lòng chờ. Báo cáo sẽ xuất hiện tại đây khi hoàn tất.</p></div>;
