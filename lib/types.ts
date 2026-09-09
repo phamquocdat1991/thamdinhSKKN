@@ -71,6 +71,7 @@ export interface CriterionAssessment {
 }
 
 export interface SkknAnalysisResult {
+  isDemo?: boolean;
   id: string;
   createdAt: string;
   title: string;
@@ -121,3 +122,4 @@ export interface TitleAnalysisResult {
   critique: string;
   suggestedTitles: string[];
 }
+

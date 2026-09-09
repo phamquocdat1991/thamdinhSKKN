@@ -10,10 +10,10 @@ export const ApiKeyWarning: React.FC<ApiKeyWarningProps> = ({ onOpenSettings }) 
     <div className="api-warning-card">
       <div className="api-warning-title">
         <Key size={18} />
-        <span>Cần API Key để bắt đầu</span>
+        <span>Kết nối AI để thẩm định nội dung của thầy cô</span>
       </div>
       <p className="api-warning-desc">
-        API Key là mã miễn phí bạn tự tạo tại{' '}
+        Thầy cô có thể tạo API key tại{' '}
         <a
           href="https://aistudio.google.com/app/apikey"
           target="_blank"
@@ -22,7 +22,7 @@ export const ApiKeyWarning: React.FC<ApiKeyWarningProps> = ({ onOpenSettings }) 
         >
           Google AI Studio
         </a>{' '}
-        — không phải mật khẩu hay thông tin cá nhân. Key chỉ lưu trên trình duyệt của bạn.
+        để sử dụng AI (hạn mức và chi phí tùy tài khoản). Khi chưa kết nối, ứng dụng chỉ hiển thị báo cáo minh họa.
       </p>
       <button className="btn-warning-action" onClick={onOpenSettings}>
         <Settings size={16} />
@@ -31,3 +31,4 @@ export const ApiKeyWarning: React.FC<ApiKeyWarningProps> = ({ onOpenSettings }) 
     </div>
   );
 };
+

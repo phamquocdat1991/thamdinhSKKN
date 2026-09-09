@@ -68,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({
             title="So sánh phiên bản"
             aria-label="So sánh phiên bản"
           >
-            <GitCompare size={17} />
+            <GitCompare size={17} /><span className="toolbar-label">So sánh</span>
           </button>
 
           {/* History Button */}
@@ -78,7 +78,7 @@ export const Header: React.FC<HeaderProps> = ({
             title={`Lịch sử kiểm tra (${historyCount} bản ghi)`}
             aria-label="Lịch sử kiểm tra"
           >
-            <History size={17} />
+            <History size={17} /><span className="toolbar-label">Lịch sử ({historyCount})</span>
           </button>
 
           {/* Reset Button */}
@@ -98,22 +98,23 @@ export const Header: React.FC<HeaderProps> = ({
             title="Cài đặt API Key & Model AI"
             aria-label="Cài đặt"
           >
-            <Settings size={17} />
+            <Settings size={17} /><span className="toolbar-label">Cài đặt AI</span>
             {!hasApiKey && <span className="badge-dot" title="Chưa cài đặt API Key" />}
           </button>
 
           {/* Visitor Count Badge */}
-          <div className="header-badge" title="Lượt truy cập hệ thống">
+          <div className="header-badge" title="Lượt mở trên trình duyệt này">
             <Users size={13} />
-            <span>{visitCount} lượt</span>
+            <span>{visitCount} lượt mở</span>
           </div>
 
           {/* Version Pill */}
           <div className="version-pill" title="Phiên bản ứng dụng">
-            v1.4
+            v1.5
           </div>
         </div>
       </div>
     </header>
   );
 };
+

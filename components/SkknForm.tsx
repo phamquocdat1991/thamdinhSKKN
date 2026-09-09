@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Search,
   Upload,
@@ -39,6 +39,9 @@ export const SkknForm: React.FC<SkknFormProps> = ({
   const [titleAnalysis, setTitleAnalysis] = useState<TitleAnalysisResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => { setTitleAnalysis(null); }, [formData.title]);
+  useEffect(() => { if (formData.content && !formData.fileName) setActiveTab('manual'); }, [formData.content, formData.fileName]);
+
   // Điền dữ liệu mẫu
   const handleUseSampleData = () => {
     setFormData({ ...SAMPLE_SKKN_DATA });
@@ -60,33 +63,41 @@ export const SkknForm: React.FC<SkknFormProps> = ({
   // Đọc file .docx hoặc .pdf
   const handleFileProcess = async (file: File) => {
     const ext = file.name.split('.').pop()?.toLowerCase();
-    if (ext !== 'docx' && ext !== 'pdf' && ext !== 'doc') {
-      alert('Chỉ hỗ trợ file Word (.docx) và PDF (.pdf)');
+    if (!['docx', 'pdf', 'txt'].includes(ext || '')) {
+      alert('Hỗ trợ DOCX, PDF và TXT. Với file .doc cũ, vui lòng lưu lại thành .docx.');
       return;
     }
+    if (file.size > 10 * 1024 * 1024) { alert('Vui lòng chọn tài liệu tối đa 10 MB.'); return; }
+    if (readingFile || isLoading) return;
 
     setReadingFile(true);
     try {
+      let text = '';
       if (ext === 'docx') {
-        const arrayBuffer = await file.arrayBuffer();
-        const res = await mammoth.extractRawText({ arrayBuffer });
-        setFormData((prev) => ({
-          ...prev,
-          content: res.value || '',
-          fileName: file.name,
-        }));
-      } else {
-        const text = await file.text();
-        setFormData((prev) => ({
-          ...prev,
-          content: text.slice(0, 50000) || `Tài liệu: ${file.name}`,
-          fileName: file.name,
-        }));
-      }
+        const res = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+        text = res.value;
+      } else if (ext === 'pdf') {
+        const pdfjs = await import('pdfjs-dist');
+        pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+        const pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+        try {
+          const pages: string[] = [];
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            pages.push(content.items.map(item => 'str' in item ? item.str + (item.hasEOL ? '\n' : ' ') : '').join(''));
+          }
+          text = pages.join('\n\n');
+        } finally { await pdf.destroy(); }
+      } else { text = await file.text(); }
+      if (!text.trim()) { alert('Không tìm thấy văn bản. PDF scan cần OCR trước, hoặc thầy cô có thể dán nội dung.'); return; }
+      setFormData(prev => ({ ...prev, content: text, fileName: file.name }));
+
     } catch {
       alert('Lỗi đọc nội dung file. Vui lòng thử lại hoặc dán văn bản trực tiếp.');
     } finally {
       setReadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -118,6 +129,7 @@ export const SkknForm: React.FC<SkknFormProps> = ({
         </button>
       </div>
 
+      <fieldset disabled={isLoading || readingFile} style={{ border: 0, minWidth: 0 }}>
       <div className="form-body" style={{ padding: '18px' }}>
         {/* Document Input Section */}
         <div className="form-group" style={{ marginBottom: '16px' }}>
@@ -128,7 +140,7 @@ export const SkknForm: React.FC<SkknFormProps> = ({
               onClick={() => setActiveTab('upload')}
             >
               <Upload size={15} />
-              <span>Tải file lên (Word, PDF)</span>
+              <span>Tải tài liệu</span>
             </button>
             <button
               type="button"
@@ -145,7 +157,7 @@ export const SkknForm: React.FC<SkknFormProps> = ({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".docx,.pdf,.doc"
+                accept=".docx,.pdf,.txt"
                 style={{ display: 'none' }}
                 onChange={(e) => {
                   if (e.target.files && e.target.files[0]) {
@@ -161,6 +173,8 @@ export const SkknForm: React.FC<SkknFormProps> = ({
                 }}
                 onDragLeave={() => setIsDragOver(false)}
                 onDrop={handleDrop}
+                role="button" tabIndex={0} aria-label="Tải tài liệu SKKN"
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}
                 onClick={() => fileInputRef.current?.click()}
                 style={{ padding: '20px 14px' }}
               >
@@ -176,7 +190,7 @@ export const SkknForm: React.FC<SkknFormProps> = ({
                       Kéo & thả file hoặc click để tải lên
                     </div>
                     <div className="dropzone-subtitle" style={{ fontSize: '0.78rem', marginBottom: '8px' }}>
-                      Hỗ trợ định dạng Word (.docx) và PDF (.pdf)
+                      DOCX, PDF có văn bản, TXT · Tối đa 10 MB
                     </div>
                     <div className="dropzone-tags">
                       <span>📄 Word (.docx)</span>
@@ -214,6 +228,7 @@ export const SkknForm: React.FC<SkknFormProps> = ({
                 className="form-textarea"
                 rows={6}
                 placeholder="Dán hoặc nhập nội dung bài viết sáng kiến kinh nghiệm vào đây..."
+                aria-label="Nội dung SKKN"
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 style={{ fontSize: '0.86rem' }}
@@ -234,6 +249,7 @@ export const SkknForm: React.FC<SkknFormProps> = ({
             </label>
             <select
               className="form-select"
+              aria-label="Cấp học"
               value={formData.gradeLevel}
               onChange={(e) => setFormData({ ...formData, gradeLevel: e.target.value })}
               style={{ padding: '8px 10px', fontSize: '0.88rem' }}
@@ -256,6 +272,7 @@ export const SkknForm: React.FC<SkknFormProps> = ({
               type="text"
               className="form-input"
               placeholder="VD: Toán, Ngữ Văn, Quản lý..."
+              aria-label="Môn học / Lĩnh vực"
               value={formData.subject}
               onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
               style={{ padding: '8px 10px', fontSize: '0.88rem' }}
@@ -274,6 +291,7 @@ export const SkknForm: React.FC<SkknFormProps> = ({
               type="text"
               className="form-input"
               placeholder="Ví dụ: Một số biện pháp nâng cao chất lượng dạy học môn Toán cho học sinh lớp 5..."
+              aria-label="Tên đề tài SKKN"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               style={{ fontSize: '0.88rem' }}
@@ -386,6 +404,7 @@ export const SkknForm: React.FC<SkknFormProps> = ({
           </label>
           <select
             className="form-select"
+            aria-label="Mục tiêu thi đạt giải"
             value={formData.targetAward}
             onChange={(e) => setFormData({ ...formData, targetAward: e.target.value })}
             style={{ padding: '8px 10px', fontSize: '0.88rem' }}
@@ -402,7 +421,7 @@ export const SkknForm: React.FC<SkknFormProps> = ({
           className="btn-primary-large"
           type="button"
           onClick={onSubmit}
-          disabled={isLoading || !formData.title.trim() || !formData.content.trim()}
+          disabled={isLoading || readingFile || !formData.title.trim() || !formData.content.trim()}
           style={{ padding: '12px 16px', fontSize: '1rem' }}
         >
           {isLoading ? (
@@ -418,6 +437,8 @@ export const SkknForm: React.FC<SkknFormProps> = ({
           )}
         </button>
       </div>
+      </fieldset>
     </div>
   );
 };
+

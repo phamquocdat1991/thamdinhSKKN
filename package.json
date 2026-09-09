@@ -1,13 +1,15 @@
 {
   "name": "tro-ly-skkn",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prebuild": "node scripts/prepare-pdf.mjs",
+    "predev": "node scripts/prepare-pdf.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.21.0",
@@ -15,6 +17,7 @@
     "lucide-react": "^0.475.0",
     "mammoth": "^1.8.0",
     "next": "^14.2.24",
+    "pdfjs-dist": "5.6.205",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

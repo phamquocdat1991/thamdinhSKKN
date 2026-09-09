@@ -135,19 +135,9 @@ Yêu cầu trả về DUY NHẤT một JSON theo cấu trúc sau (không kèm ma
       }
     }
   } catch (e) {
-    // Fallback phân tích sư phạm ngoại tuyến nếu lỗi API
-    return {
-      title,
-      overallScore: 8.0,
-      verdict: 'Khá',
-      structure: { hasAction: true, hasTarget: true, hasScope: true, hasObjective: true },
-      critique: 'Tên đề tài có ý tưởng tốt. Đã xác định rõ đối tượng và định hướng cải tiến phương pháp giáo dục.',
-      suggestedTitles: [
-        `Biện pháp nâng cao chất lượng dạy học: ${title}`,
-        `Ứng dụng công nghệ và đổi mới phương pháp trong: ${title}`
-      ]
-    };
+    throw new Error(normalizeAiError(e).userFriendlyVi);
   }
+  throw new Error('Không thể phân tích tên đề tài. Vui lòng kiểm tra kết nối AI và thử lại.');
 }
 
 export async function analyzeFullSkkn(
@@ -160,6 +150,7 @@ export async function analyzeFullSkkn(
   if (!apiKey || !apiKey.trim()) {
     return {
       ...MOCK_ANALYSIS_RESULT,
+      isDemo: true,
       id: 'skkn-' + Date.now(),
       title: formData.title || MOCK_ANALYSIS_RESULT.title,
       gradeLevel: formData.gradeLevel || MOCK_ANALYSIS_RESULT.gradeLevel,
@@ -310,6 +301,7 @@ Yêu cầu trả về DUY NHẤT một JSON hợp lệ tuân thủ chính xác S
         subject: formData.subject,
         targetAward: formData.targetAward,
         ...parsed,
+        isDemo: false,
       };
     } catch (err: unknown) {
       clearTimeout(timer);
@@ -331,3 +323,4 @@ Yêu cầu trả về DUY NHẤT một JSON hợp lệ tuân thủ chính xác S
 
   throw new Error(lastError?.userFriendlyVi || 'Không thể hoàn thành thẩm định SKKN. Vui lòng thử lại sau.');
 }
+

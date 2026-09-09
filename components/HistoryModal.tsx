@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { X, History, Trash2, Eye, Award } from 'lucide-react';
 import { SkknAnalysisResult } from '@/lib/types';
 
@@ -21,6 +21,8 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
   onDelete,
   onClearAll,
 }) => {
+  const [query, setQuery] = useState('');
+  const filtered = history.filter(item => `${item.isDemo ? "[Minh họa] " : ""}{item.title} ${item.subject} ${item.gradeLevel}`.toLocaleLowerCase('vi').includes(query.toLocaleLowerCase('vi')));
   if (!isOpen) return null;
 
   return (
@@ -39,6 +41,8 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
 
         {/* Body */}
         <div className="modal-body">
+          <input className="form-input history-search" aria-label="Tìm kiếm lịch sử" placeholder="Tìm theo đề tài, môn học, cấp học…" value={query} onChange={e => setQuery(e.target.value)} />
+          {history.length > 0 && filtered.length === 0 && <p role="status">Không tìm thấy bản ghi phù hợp.</p>}
           {history.length === 0 ? (
             <div className="empty-state">
               <History className="empty-state-icon" />
@@ -69,7 +73,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {history.map((item) => (
+                {filtered.map((item) => (
                   <div
                     key={item.id}
                     style={{
@@ -82,7 +86,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
                       <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)', lineHeight: 1.35 }}>
-                        {item.title}
+                        {item.isDemo ? "[Minh họa] " : ""}{item.title}
                       </div>
                       <div
                         style={{
@@ -138,3 +142,4 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
     </div>
   );
 };
+

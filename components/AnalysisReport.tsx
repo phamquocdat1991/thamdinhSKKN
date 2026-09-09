@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import {
   Award,
+  Loader2,
   AlertOctagon,
   CheckCircle2,
   FileCheck,
@@ -57,6 +58,7 @@ export const AnalysisReport: React.FC<AnalysisReportProps> = ({
   const handleCopy = () => {
     if (!result) return;
     const summaryText = `BÁO CÁO THẨM ĐỊNH SKKN
+${result.isDemo ? '[BÁO CÁO MINH HỌA — KHÔNG PHẢI THẨM ĐỊNH THẬT]' : ''}
 Đề tài: ${result.title}
 Cấp học: ${result.gradeLevel} | Môn: ${result.subject} | Mục tiêu: ${result.targetAward}
 Tổng điểm: ${result.totalScore}/100 đ
@@ -86,6 +88,7 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
       <head><meta charset='utf-8'><title>Báo cáo thẩm định SKKN</title></head>
       <body style="font-family: 'Times New Roman', serif; line-height: 1.5; padding: 20px;">
         <h2 style="text-align: center; color: #1e3a8a;">BÁO CÁO THẨM ĐỊNH SÁNG KIẾN KINH NGHIỆM</h2>
+        ${result.isDemo ? '<p><strong>BÁO CÁO MINH HỌA — KHÔNG PHẢI THẨM ĐỊNH THẬT</strong></p>' : ''}
         <p><strong>Tên đề tài:</strong> ${result.title}</p>
         <p><strong>Cấp học:</strong> ${result.gradeLevel} | <strong>Môn:</strong> ${result.subject}</p>
         <p><strong>Mục tiêu đạt giải:</strong> ${result.targetAward}</p>
@@ -116,6 +119,8 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
     URL.revokeObjectURL(url);
   };
 
+  if (isLoading) return <div className="dashboard-empty-card" role="status"><div className="dashboard-empty-icon"><Loader2 size={32} className="spin" /></div><h3 className="dashboard-empty-title">Đang đọc và thẩm định sáng kiến…</h3><p className="dashboard-empty-desc">Thầy cô vui lòng chờ. Báo cáo sẽ xuất hiện tại đây khi hoàn tất.</p></div>;
+
   // Trạng thái trống / Chờ thẩm định
   if (!result) {
     return (
@@ -123,7 +128,7 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
         <div className="dashboard-empty-icon">
           <Sparkles size={32} />
         </div>
-        <h3 className="dashboard-empty-title">Dashboard Thẩm Định Sáng Kiến</h3>
+        <h3 className="dashboard-empty-title">Một góc nhìn mới cho sáng kiến</h3>
         <p className="dashboard-empty-desc">
           Tải file Word (.docx), PDF hoặc dán nội dung ở cột bên trái để AI tiến hành chấm điểm 4 tiêu chí vàng, rà soát đạo văn và soát lỗi chính tả.
         </p>
@@ -173,6 +178,7 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
 
   return (
     <div style={{ animation: 'fadeIn 0.3s ease-in' }}>
+      {result.isDemo && <div className="demo-notice" role="status"><strong>Báo cáo minh họa</strong> · Điểm số và nhận xét bên dưới là dữ liệu mẫu, không phải kết quả phân tích nội dung của thầy cô. Kết nối API key để thẩm định thật.</div>}
       {/* Top Title & Action Bar */}
       <div
         style={{
@@ -225,7 +231,7 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
               {result.criteria.novelty.score} <span>/ {result.criteria.novelty.maxScore}</span>
             </div>
             <span className="kpi-badge">
-              {result.criteria.novelty.score >= 25 ? 'Xuất sắc' : 'Rất Cao'}
+              {result.criteria.novelty.score >= 25 ? 'Tốt' : 'Cần hoàn thiện'}
             </span>
           </div>
           <div className="kpi-progress-bar">
@@ -277,7 +283,7 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
               {result.criteria.scientific.score} <span>/ {result.criteria.scientific.maxScore}</span>
             </div>
             <span className="kpi-badge" style={{ background: '#f3e8ff', color: '#7e22ce' }}>
-              {result.criteria.scientific.score >= 25 ? 'Xuất sắc' : 'Rất Cao'}
+              {result.criteria.scientific.score >= 25 ? 'Tốt' : 'Cần hoàn thiện'}
             </span>
           </div>
           <div className="kpi-progress-bar">
@@ -306,7 +312,7 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
             <div className="kpi-score">
               {result.criteria.effectiveness.score} <span>/ {result.criteria.effectiveness.maxScore}</span>
             </div>
-            <span className="kpi-badge">Rất Cao</span>
+            <span className="kpi-badge">Tham khảo</span>
           </div>
           <div className="kpi-progress-bar">
             <div
@@ -331,7 +337,7 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
             <div className="kpi-score">
               {result.criteria.applicability.score} <span>/ {result.criteria.applicability.maxScore}</span>
             </div>
-            <span className="kpi-badge">Rất Cao</span>
+            <span className="kpi-badge">Tham khảo</span>
           </div>
           <div className="kpi-progress-bar">
             <div
@@ -524,3 +530,4 @@ Số lỗi chính tả phát hiện: ${result.spellingErrors.length}
     </div>
   );
 };
+

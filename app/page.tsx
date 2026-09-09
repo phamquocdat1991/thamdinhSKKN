@@ -19,6 +19,8 @@ import {
 import { SAMPLE_SKKN_DATA } from '@/lib/sample-data';
 
 export default function HomePage() {
+  const [draftReady, setDraftReady] = useState(false);
+  const [draftStatus, setDraftStatus] = useState('');
   // Theme state
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   
@@ -50,6 +52,7 @@ export default function HomePage() {
 
   // Load initial settings & history from local storage on mount
   useEffect(() => {
+    try {
     // Theme
     const savedTheme = localStorage.getItem('skkn_theme') as 'light' | 'dark' | null;
     if (savedTheme) {
@@ -72,7 +75,7 @@ export default function HomePage() {
     // History
     try {
       const savedHistory = localStorage.getItem('skkn_history');
-      if (savedHistory) setHistory(JSON.parse(savedHistory));
+      if (savedHistory) { const items = JSON.parse(savedHistory); if (Array.isArray(items)) setHistory(items.filter(item => item && typeof item.id === 'string' && typeof item.title === 'string' && item.criteria && item.awardPrediction && item.plagiarismReport && Array.isArray(item.spellingErrors) && item.strategicAdvice)); }
     } catch {
       // Bỏ qua lỗi JSON
     }
@@ -81,7 +84,30 @@ export default function HomePage() {
     const currentVisits = Number(localStorage.getItem('skkn_visits') || '0') + 1;
     localStorage.setItem('skkn_visits', String(currentVisits));
     setVisitCount(currentVisits);
+    const savedDraft = localStorage.getItem('skkn_draft');
+    if (savedDraft) {
+      const draft = JSON.parse(savedDraft);
+      if (draft && ['title', 'gradeLevel', 'subject', 'targetAward', 'content'].every(key => typeof draft[key] === 'string')) {
+        setFormData(draft);
+        setDraftStatus('Đã khôi phục bản nháp');
+      }
+    }
+    } catch { setDraftStatus('Không thể đọc dữ liệu đã lưu trên trình duyệt'); }
+    setDraftReady(true);
   }, []);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem('skkn_draft', JSON.stringify(formData));
+        setDraftStatus(formData.title || formData.content ? 'Đã lưu nháp trên trình duyệt này' : 'Bản nháp tự động lưu khi nhập');
+      } catch { setDraftStatus('Không thể lưu nháp: bộ nhớ trình duyệt không khả dụng hoặc đã đầy'); }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [formData, draftReady]);
+
+  const scrollToReport = () => setTimeout(() => document.getElementById('analysis-report')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 
   // Theme toggle handler
   const toggleTheme = () => {
@@ -177,17 +203,9 @@ export default function HomePage() {
         // Lưu vào lịch sử
         const updatedHistory = [newResult, ...history.filter((h) => h.id !== newResult.id)].slice(0, 30);
         setHistory(updatedHistory);
-        localStorage.setItem('skkn_history', JSON.stringify(updatedHistory));
+        try { localStorage.setItem('skkn_history', JSON.stringify(updatedHistory)); } catch { setDraftStatus('Đã thẩm định xong, nhưng không đủ bộ nhớ để lưu lịch sử. Hãy tải báo cáo.'); }
 
-        // Cuộn xuống báo cáo kết quả trên màn hình di động/tablet
-        if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-          setTimeout(() => {
-            window.scrollTo({
-              top: 650,
-              behavior: 'smooth',
-            });
-          }, 100);
-        }
+        scrollToReport();
       } else {
         setErrorMessage(data.message || 'Đã xảy ra lỗi trong quá trình thẩm định SKKN.');
       }
@@ -264,6 +282,7 @@ export default function HomePage() {
         )}
 
         {/* 4. Split-Screen Studio (Concept 1: 2 Cột Trực Quan Studio) */}
+        <div className="workspace-status"><strong>Không gian thẩm định · Từ ý tưởng đến hoàn thiện</strong><span className="draft-status" role="status">{draftStatus}</span></div>
         <div className="studio-layout">
           {/* Cột trái: Hồ sơ đề tài & Tải file/Nhập liệu */}
           <div className="studio-left-panel">
@@ -277,7 +296,7 @@ export default function HomePage() {
           </div>
 
           {/* Cột phải: Bảng số liệu thẩm định trực quan & Dashboard */}
-          <div className="studio-right-panel">
+          <div className="studio-right-panel" id="analysis-report" aria-busy={isLoading}>
             <AnalysisReport
               result={currentResult}
               onUseSampleData={() => setFormData({ ...SAMPLE_SKKN_DATA })}
@@ -287,6 +306,7 @@ export default function HomePage() {
         </div>
 
         {/* 6. Footer thanh lịch chuyên nghiệp - Phát triển bởi: Anh giáo PHẠM QUỐC ĐẠT */}
+        <p className="privacy-note">Bản nháp và lịch sử được lưu trên trình duyệt này. Khi thẩm định bằng AI, nội dung được gửi qua máy chủ ứng dụng đến nhà cung cấp AI đã chọn. Nhận xét và điểm số là gợi ý tham khảo; kết quả rà soát trùng lặp không thay thế công cụ đối chiếu nguồn chuyên dụng.</p>
         <Footer />
       </main>
 
@@ -310,7 +330,7 @@ export default function HomePage() {
         history={history}
         onSelect={(item) => {
           setCurrentResult(item);
-          window.scrollTo({ top: 750, behavior: 'smooth' });
+          scrollToReport();
         }}
         onDelete={handleDeleteHistoryItem}
         onClearAll={handleClearAllHistory}
@@ -325,3 +345,4 @@ export default function HomePage() {
     </div>
   );
 }
+
